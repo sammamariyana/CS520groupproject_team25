@@ -1,97 +1,221 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiHome, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiHome, FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+    setError('')
+  }
+
+  const isEduEmail = form.email.endsWith('.edu') || form.email === ''
+  const emailWarning = !isLogin && form.email && !isEduEmail
+
+  const handleSubmit = () => {
+    if (!form.email || !form.password || (!isLogin && !form.name)) {
+      setError('Please fill in all fields.')
+      return
+    }
+    if (!isLogin && !isEduEmail) {
+      setError('Please use your university (.edu) email address.')
+      return
+    }
+    navigate('/dashboard')
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1F3864 0%, #2E5B9A 100%)', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* Navbar */}
-      <nav style={{ padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <FiHome color="white" size={22} />
-          <span style={{ color: 'white', fontSize: '22px', fontWeight: '700' }}>CampusNest</span>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 flex flex-col">
+
+      {/* Minimal nav */}
+      <nav className="px-8 h-16 flex items-center">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 group">
+          <div className="bg-blue-500 rounded-lg p-1.5 group-hover:bg-blue-400 transition-colors">
+            <FiHome className="text-white" size={18} />
+          </div>
+          <span className="text-white text-xl font-bold">
+            Campus<span className="text-blue-300">Nest</span>
+          </span>
+        </button>
       </nav>
 
       {/* Card */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          style={{ background: 'white', borderRadius: '24px', padding: '48px', width: '100%', maxWidth: '420px', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
-          
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8"
+        >
           {/* Toggle */}
-          <div style={{ display: 'flex', background: '#f0f4ff', borderRadius: '12px', padding: '4px', marginBottom: '32px' }}>
+          <div className="flex bg-gray-100 rounded-xl p-1 mb-8">
             {['Log In', 'Sign Up'].map((tab, i) => (
-              <button key={tab} onClick={() => setIsLogin(i === 0)}
-                style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '15px', fontWeight: '600', transition: 'all 0.2s',
-                  background: isLogin === (i === 0) ? '#1F3864' : 'transparent',
-                  color: isLogin === (i === 0) ? 'white' : '#666' }}>
+              <button
+                key={tab}
+                onClick={() => { setIsLogin(i === 0); setError('') }}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                  isLogin === (i === 0)
+                    ? 'bg-white text-blue-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
                 {tab}
               </button>
             ))}
           </div>
 
-          <h2 style={{ fontSize: '26px', fontWeight: '700', color: '#1F3864', margin: '0 0 8px' }}>
-            {isLogin ? 'Welcome back! 👋' : 'Join CampusNest 🏠'}
-          </h2>
-          <p style={{ color: '#888', fontSize: '14px', margin: '0 0 28px' }}>
-            {isLogin ? 'Log in to your account' : 'Use your UMass or Five College email'}
-          </p>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={isLogin ? 'login' : 'signup'}
+              initial={{ opacity: 0, x: isLogin ? -10 : 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
+                {isLogin ? 'Welcome back!' : 'Join CampusNest'}
+              </h2>
+              <p className="text-gray-500 text-sm mb-7">
+                {isLogin ? 'Log in to access your dashboard.' : 'Use your university .edu email to register.'}
+              </p>
 
-          {/* Fields */}
-          {!isLogin && (
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '6px' }}>Full Name</label>
-              <input name="name" value={form.name} onChange={handleChange}
-                placeholder="Sammam Ariyana"
-                style={{ width: '100%', padding: '12px 16px', border: '1.5px solid #e0e0e0', borderRadius: '10px', fontSize: '15px', outline: 'none', boxSizing: 'border-box', color: '#333' }} />
-            </div>
-          )}
+              <div className="space-y-4">
+                {/* Name (signup only) */}
+                {!isLogin && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+                    <div className="relative">
+                      <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                      <input
+                        name="name"
+                        value={form.name}
+                        onChange={handleChange}
+                        placeholder="Alex Johnson"
+                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                )}
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '6px' }}>University Email</label>
-            <div style={{ position: 'relative' }}>
-              <FiMail style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} color="#888" size={16} />
-              <input name="email" value={form.email} onChange={handleChange}
-                placeholder="sammam@umass.edu"
-                style={{ width: '100%', padding: '12px 16px 12px 42px', border: '1.5px solid #e0e0e0', borderRadius: '10px', fontSize: '15px', outline: 'none', boxSizing: 'border-box', color: '#333' }} />
-            </div>
-          </div>
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    University Email
+                    {!isLogin && (
+                      <span className="ml-2 text-xs font-normal text-gray-400">(.edu required)</span>
+                    )}
+                  </label>
+                  <div className="relative">
+                    <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="you@umass.edu"
+                      className={`w-full border rounded-xl pl-10 pr-10 py-3 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:border-transparent placeholder-gray-400 ${
+                        emailWarning
+                          ? 'border-amber-400 focus:ring-amber-400'
+                          : 'border-gray-200 focus:ring-blue-500'
+                      }`}
+                    />
+                    {form.email && !emailWarning && (
+                      <FiCheckCircle className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500" size={16} />
+                    )}
+                    {emailWarning && (
+                      <FiAlertCircle className="absolute right-3.5 top-1/2 -translate-y-1/2 text-amber-500" size={16} />
+                    )}
+                  </div>
+                  {emailWarning && (
+                    <p className="text-amber-600 text-xs mt-1.5 flex items-center gap-1">
+                      <FiAlertCircle size={12} /> Must be a .edu address (e.g. you@umass.edu)
+                    </p>
+                  )}
+                </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '6px' }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <FiLock style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} color="#888" size={16} />
-              <input name="password" value={form.password} onChange={handleChange}
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                style={{ width: '100%', padding: '12px 42px 12px 42px', border: '1.5px solid #e0e0e0', borderRadius: '10px', fontSize: '15px', outline: 'none', boxSizing: 'border-box', color: '#333' }} />
-              <div onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer' }}>
-                {showPassword ? <FiEyeOff color="#888" size={16} /> : <FiEye color="#888" size={16} />}
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                  <div className="relative">
+                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      className="w-full border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Social media connect (signup only) */}
+                {!isLogin && (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <p className="text-xs font-semibold text-gray-600 mb-3">
+                      Connect social accounts for trust badges <span className="text-gray-400 font-normal">(optional)</span>
+                    </p>
+                    <div className="flex gap-2">
+                      {[
+                        { label: 'Facebook', bg: 'bg-blue-600 hover:bg-blue-700', text: 'text-white' },
+                        { label: 'Instagram', bg: 'bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500', text: 'text-white' },
+                        { label: 'Snapchat', bg: 'bg-yellow-400 hover:bg-yellow-300', text: 'text-gray-900' },
+                      ].map(s => (
+                        <button
+                          key={s.label}
+                          type="button"
+                          className={`flex-1 ${s.bg} ${s.text} text-xs font-bold py-2 rounded-lg transition-all`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
 
-          <button onClick={() => navigate('/')}
-            style={{ width: '100%', padding: '14px', background: '#1F3864', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>
-            {isLogin ? 'Log In' : 'Create Account'}
-          </button>
+              {/* Error */}
+              {error && (
+                <div className="mt-4 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+                  <FiAlertCircle size={15} /> {error}
+                </div>
+              )}
 
-          <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px', color: '#888' }}>
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <span onClick={() => setIsLogin(!isLogin)} style={{ color: '#4472C4', fontWeight: '600', cursor: 'pointer' }}>
-              {isLogin ? 'Sign Up' : 'Log In'}
-            </span>
-          </div>
+              {/* Submit */}
+              <button
+                onClick={handleSubmit}
+                className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-base transition-colors shadow-md shadow-blue-200"
+              >
+                {isLogin ? 'Log In' : 'Create Account'}
+              </button>
 
+              {isLogin && (
+                <button className="w-full mt-3 text-sm text-blue-600 hover:underline font-medium">
+                  Forgot your password?
+                </button>
+              )}
+
+              <p className="text-center text-sm text-gray-500 mt-5">
+                {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                <button
+                  onClick={() => { setIsLogin(!isLogin); setError('') }}
+                  className="text-blue-600 font-semibold hover:underline"
+                >
+                  {isLogin ? 'Sign Up' : 'Log In'}
+                </button>
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       </div>
     </div>
