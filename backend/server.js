@@ -1,3 +1,4 @@
+// this is the backend server for the CampusNest app
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
