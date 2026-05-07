@@ -7,6 +7,7 @@ import Roommates from './pages/Roommates'
 import AIMatch from './pages/AIMatch'
 import LeaseReview from './pages/LeaseReview'
 import Dashboard from './pages/Dashboard'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
@@ -15,11 +16,13 @@ function App() {
         <Route path="/"             element={<Home />} />
         <Route path="/login"        element={<Login />} />
         <Route path="/browse"       element={<Browse />} />
-        <Route path="/post-listing" element={<PostListing />} />
         <Route path="/roommates"    element={<Roommates />} />
-        <Route path="/ai-match"     element={<AIMatch />} />
-        <Route path="/lease-review" element={<LeaseReview />} />
-        <Route path="/dashboard"    element={<Dashboard />} />
+
+        {/* Protected — must be logged in */}
+        <Route path="/post-listing" element={<ProtectedRoute><PostListing /></ProtectedRoute>} />
+        <Route path="/ai-match"     element={<ProtectedRoute><AIMatch /></ProtectedRoute>} />
+        <Route path="/lease-review" element={<ProtectedRoute><LeaseReview /></ProtectedRoute>} />
+        <Route path="/dashboard"    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       </Routes>
     </Router>
   )

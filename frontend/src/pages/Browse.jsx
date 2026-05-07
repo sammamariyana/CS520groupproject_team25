@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiSearch, FiMapPin, FiHome, FiBookmark, FiFlag,
-  FiCheckCircle, FiSliders, FiPlusCircle, FiX,
+  FiCheckCircle, FiSliders, FiPlusCircle, FiX, FiLock,
 } from 'react-icons/fi'
 import Navbar from '../components/Navbar'
+import { useAuth } from '../context/AuthContext'
 
 const allListings = [
   { id: 1,  price: 900,  address: '123 N Pleasant St, Amherst', beds: 2, baths: 1, distance: 0.5, verified: true,  available: 'Aug 1',  tag: 'Popular',     amenities: ['Parking', 'Laundry', 'AC'] },
@@ -21,15 +22,18 @@ const allListings = [
 
 export default function Browse() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [maxPrice, setMaxPrice] = useState(1500)
-  const [beds, setBeds] = useState('Any')
+  const { user } = useAuth()
+
+  const [search, setSearch]           = useState('')
+  const [maxPrice, setMaxPrice]       = useState(1500)
+  const [beds, setBeds]               = useState('Any')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [maxDistance, setMaxDistance] = useState(2)
-  const [saved, setSaved] = useState({})
-  const [reported, setReported] = useState({})
+  const [saved, setSaved]             = useState({})
+  const [reported, setReported]       = useState({})
   const [reportModal, setReportModal] = useState(null)
   const [reportReason, setReportReason] = useState('')
+  const [authPrompt, setAuthPrompt]   = useState(null) // 'save' | 'report'
 
   const filtered = allListings.filter(l =>
     l.address.toLowerCase().includes(search.toLowerCase()) &&
@@ -39,7 +43,15 @@ export default function Browse() {
     l.distance <= maxDistance
   )
 
-  const toggleSave = id => setSaved(s => ({ ...s, [id]: !s[id] }))
+  const handleSave = id => {
+    if (!user) { setAuthPrompt('save'); return }
+    setSaved(s => ({ ...s, [id]: !s[id] }))
+  }
+
+  const handleReport = id => {
+    if (!user) { setAuthPrompt('report'); return }
+    setReportModal(id)
+  }
 
   const submitReport = () => {
     if (reportReason) {
@@ -85,8 +97,7 @@ export default function Browse() {
               <div className="relative">
                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                 <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Address..."
                   className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 />
@@ -99,14 +110,9 @@ export default function Browse() {
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Max Price</label>
                 <span className="text-blue-600 text-xs font-bold">${maxPrice}/mo</span>
               </div>
-              <input
-                type="range" min="500" max="1500" step="50" value={maxPrice}
-                onChange={e => setMaxPrice(+e.target.value)}
-                className="w-full accent-blue-600"
-              />
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>$500</span><span>$1,500</span>
-              </div>
+              <input type="range" min="500" max="1500" step="50" value={maxPrice}
+                onChange={e => setMaxPrice(+e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>$500</span><span>$1,500</span></div>
             </div>
 
             {/* Distance */}
@@ -115,14 +121,9 @@ export default function Browse() {
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Max Distance</label>
                 <span className="text-blue-600 text-xs font-bold">{maxDistance}mi</span>
               </div>
-              <input
-                type="range" min="0.2" max="2" step="0.1" value={maxDistance}
-                onChange={e => setMaxDistance(parseFloat(e.target.value))}
-                className="w-full accent-blue-600"
-              />
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>0.2mi</span><span>2mi</span>
-              </div>
+              <input type="range" min="0.2" max="2" step="0.1" value={maxDistance}
+                onChange={e => setMaxDistance(parseFloat(e.target.value))} className="w-full accent-blue-600" />
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0.2mi</span><span>2mi</span></div>
             </div>
 
             {/* Bedrooms */}
@@ -130,15 +131,10 @@ export default function Browse() {
               <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Bedrooms</label>
               <div className="flex gap-2 flex-wrap">
                 {['Any', '1', '2', '3', '4'].map(b => (
-                  <button
-                    key={b}
-                    onClick={() => setBeds(b)}
+                  <button key={b} onClick={() => setBeds(b)}
                     className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                      beds === b
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                    }`}
-                  >
+                      beds === b ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                    }`}>
                     {b === 'Any' ? 'Any' : `${b}+`}
                   </button>
                 ))}
@@ -147,10 +143,8 @@ export default function Browse() {
 
             {/* Verified only */}
             <label className="flex items-center gap-3 cursor-pointer">
-              <div
-                onClick={() => setVerifiedOnly(!verifiedOnly)}
-                className={`w-10 h-5 rounded-full transition-colors relative ${verifiedOnly ? 'bg-blue-600' : 'bg-gray-200'}`}
-              >
+              <div onClick={() => setVerifiedOnly(!verifiedOnly)}
+                className={`w-10 h-5 rounded-full transition-colors relative ${verifiedOnly ? 'bg-blue-600' : 'bg-gray-200'}`}>
                 <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${verifiedOnly ? 'left-5' : 'left-0.5'}`} />
               </div>
               <span className="text-sm font-semibold text-gray-700">Verified only</span>
@@ -177,8 +171,7 @@ export default function Browse() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtered.map((l, i) => (
-                <motion.div
-                  key={l.id}
+                <motion.div key={l.id}
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden"
                 >
@@ -188,20 +181,16 @@ export default function Browse() {
                     <span className="absolute top-3 left-3 bg-white/90 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
                       {l.tag}
                     </span>
-                    <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
-                      {l.verified && (
-                        <span className="bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <FiCheckCircle size={10} /> Verified
-                        </span>
-                      )}
-                    </div>
+                    {l.verified && (
+                      <span className="absolute top-3 right-3 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <FiCheckCircle size={10} /> Verified
+                      </span>
+                    )}
                     {/* Save button */}
-                    <button
-                      onClick={() => toggleSave(l.id)}
+                    <button onClick={() => handleSave(l.id)}
                       className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all ${
                         saved[l.id] ? 'bg-blue-600 text-white' : 'bg-white text-gray-400 hover:text-blue-600'
-                      }`}
-                    >
+                      }`}>
                       <FiBookmark size={14} fill={saved[l.id] ? 'white' : 'none'} />
                     </button>
                   </div>
@@ -216,9 +205,7 @@ export default function Browse() {
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {[`${l.beds} bed`, `${l.baths} bath`, `${l.distance}mi`, `Avail. ${l.available}`].map(tag => (
-                        <span key={tag} className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
-                          {tag}
-                        </span>
+                        <span key={tag} className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>
                       ))}
                     </div>
                     {l.amenities.length > 0 && (
@@ -228,7 +215,6 @@ export default function Browse() {
                         ))}
                       </div>
                     )}
-
                     {/* Actions */}
                     <div className="flex gap-2 pt-1">
                       <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
@@ -239,11 +225,9 @@ export default function Browse() {
                           <FiCheckCircle size={13} /> Reported
                         </span>
                       ) : (
-                        <button
-                          onClick={() => setReportModal(l.id)}
+                        <button onClick={() => handleReport(l.id)}
                           className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                          title="Report listing"
-                        >
+                          title="Report listing">
                           <FiFlag size={15} />
                         </button>
                       )}
@@ -256,53 +240,69 @@ export default function Browse() {
         </div>
       </div>
 
+      {/* ── Auth Prompt Modal ─────────────────────────────────── */}
+      <AnimatePresence>
+        {authPrompt && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+            onClick={() => setAuthPrompt(null)}>
+            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center"
+              onClick={e => e.stopPropagation()}>
+              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiLock className="text-blue-600" size={24} />
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">Sign in required</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                {authPrompt === 'save' ? 'Log in to save listings to your dashboard.' : 'Log in to report this listing.'}
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setAuthPrompt(null)}
+                  className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={() => navigate('/login?redirect=/browse')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                  Sign In
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Report Modal ──────────────────────────────────────── */}
       <AnimatePresence>
         {reportModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
-            onClick={() => setReportModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+            onClick={() => setReportModal(null)}>
+            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
               className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            >
+              onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                   <FiFlag className="text-red-500" /> Report Listing
                 </h3>
-                <button onClick={() => setReportModal(null)} className="text-gray-400 hover:text-gray-600">
-                  <FiX size={20} />
-                </button>
+                <button onClick={() => setReportModal(null)} className="text-gray-400 hover:text-gray-600"><FiX size={20} /></button>
               </div>
               <p className="text-gray-500 text-sm mb-4">Why are you reporting this listing?</p>
               <div className="space-y-2 mb-5">
                 {['Inaccurate information', 'Scam / fraudulent listing', 'Inappropriate content', 'Already rented / unavailable', 'Other'].map(reason => (
                   <label key={reason} className="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio" name="reason" value={reason}
-                      checked={reportReason === reason}
-                      onChange={() => setReportReason(reason)}
-                      className="accent-blue-600"
-                    />
+                    <input type="radio" name="reason" value={reason}
+                      checked={reportReason === reason} onChange={() => setReportReason(reason)} className="accent-blue-600" />
                     <span className="text-sm text-gray-700">{reason}</span>
                   </label>
                 ))}
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setReportModal(null)}
-                  className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors"
-                >
+                <button onClick={() => setReportModal(null)}
+                  className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
-                <button
-                  onClick={submitReport}
-                  disabled={!reportReason}
-                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
-                >
+                <button onClick={submitReport} disabled={!reportReason}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
                   Submit Report
                 </button>
               </div>
