@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:5000'
+const BASE = 'http://localhost:3001'
 
 function getToken() {
   return localStorage.getItem('cn_token')
