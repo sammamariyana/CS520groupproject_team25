@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiBookmark, FiUsers, FiHome, FiUser, FiSettings, FiFlag,
@@ -37,6 +38,7 @@ const menuItems = [
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [active, setActive] = useState('listings')
   const [listings, setListings]     = useState(initListings)
   const [roommates, setRoommates]   = useState(initRoommates)
@@ -66,10 +68,10 @@ export default function Dashboard() {
             {/* User card */}
             <div className="bg-blue-900 px-5 py-6 text-center">
               <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white font-extrabold text-xl mx-auto mb-3">
-                SA
+                {user?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </div>
-              <p className="text-white font-bold text-sm">Sammam Ariyana</p>
-              <p className="text-blue-300 text-xs mt-0.5">sammam@umass.edu</p>
+              <p className="text-white font-bold text-sm">{user?.name}</p>
+              <p className="text-blue-300 text-xs mt-0.5">{user?.email}</p>
             </div>
             {/* Menu */}
             <div className="p-2">
@@ -270,7 +272,7 @@ export default function Dashboard() {
                         <FiUser className="text-blue-600" size={17} /> Personal Info
                       </h3>
                       <div className="grid grid-cols-2 gap-4">
-                        {[['Full Name', 'Sammam Ariyana'], ['University Email', 'sammam@umass.edu'], ['Major', 'Computer Science'], ['Year', 'Junior'], ['University', 'UMass Amherst']].map(([l, v]) => (
+                        {[['Full Name', user?.name ?? ''], ['University Email', user?.email ?? ''], ['Phone', user?.phone ?? ''], ['University', 'UMass Amherst']].map(([l, v]) => (
                           <div key={l}>
                             <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{l}</label>
                             <input defaultValue={v}
