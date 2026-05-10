@@ -1,226 +1,299 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiSearch, FiMapPin, FiHome, FiHeart } from 'react-icons/fi'
 import { motion } from 'framer-motion'
+import {
+  FiSearch, FiMapPin, FiHome, FiUsers, FiShield, FiBookmark,
+  FiFlag, FiZap, FiFileText, FiArrowRight, FiCheckCircle, FiUser,
+} from 'react-icons/fi'
+import Navbar from '../components/Navbar'
 
-const listings = [
-  { id: 1, price: '$900/mo', address: '123 N Pleasant St, Amherst', beds: 2, baths: 1, distance: '0.5mi to UMass', verified: true, tag: '🔥 Popular' },
-  { id: 2, price: '$750/mo', address: '45 Fearing St, Amherst', beds: 1, baths: 1, distance: '0.8mi to UMass', verified: true, tag: '✨ New' },
-  { id: 3, price: '$1100/mo', address: '8 Meadow St, Amherst', beds: 3, baths: 2, distance: '1.2mi to UMass', verified: false, tag: '🏡 Spacious' },
-  { id: 4, price: '$850/mo', address: '72 Lincoln Ave, Amherst', beds: 2, baths: 1, distance: '0.3mi to UMass', verified: true, tag: '📍 Near Campus' },
-  { id: 5, price: '$650/mo', address: '15 Sunset Ave, Amherst', beds: 1, baths: 1, distance: '1.5mi to UMass', verified: false, tag: '💰 Best Value' },
-  { id: 6, price: '$1200/mo', address: '33 Orchard St, Amherst', beds: 4, baths: 2, distance: '0.6mi to UMass', verified: true, tag: '👥 Great for Groups' },
+const features = [
+  { icon: FiUser,      title: 'Student Auth',          desc: 'Sign up with your .edu email for a verified, trusted account.',          color: 'bg-blue-50 text-blue-600',    path: '/login' },
+  { icon: FiHome,      title: 'Housing Listings',      desc: 'Post and browse verified off-campus apartments near UMass.',             color: 'bg-emerald-50 text-emerald-600', path: '/browse' },
+  { icon: FiShield,    title: 'Social Trust Badges',   desc: 'Link Facebook, Instagram & Snapchat to earn verified trust badges.',     color: 'bg-pink-50 text-pink-600',    path: '/roommates' },
+  { icon: FiUsers,     title: 'Roommate Finder',       desc: 'Browse lifestyle-matched roommate profiles and start a conversation.',   color: 'bg-amber-50 text-amber-600',  path: '/roommates' },
+  { icon: FiBookmark,  title: 'Saved Dashboard',       desc: 'Save listings and roommates with personal notes to your dashboard.',     color: 'bg-purple-50 text-purple-600', path: '/dashboard' },
+  { icon: FiFlag,      title: 'Report & Moderate',     desc: 'Flag suspicious listings or profiles for admin review.',                 color: 'bg-red-50 text-red-600',      path: '/browse' },
+  { icon: FiZap,       title: 'AI Roommate Match',     desc: 'Questionnaire-based AI matching on sleep, cleanliness, budget & more.', color: 'bg-violet-50 text-violet-600', path: '/ai-match' },
+  { icon: FiFileText,  title: 'AI Lease Review',       desc: 'Upload your lease PDF — get plain-English summaries and red flags.',    color: 'bg-cyan-50 text-cyan-600',    path: '/lease-review' },
 ]
 
-const WARM = {
-  primary: '#C45C2E',
-  secondary: '#E8835A',
-  light: '#FDF0EA',
-  lighter: '#FFF8F4',
-  text: '#2D1810',
-  text2: '#8B6355',
-  white: '#FFFFFF',
-  green: '#2D9B6F',
-}
+const listings = [
+  { id: 1, price: 900,  address: '123 N Pleasant St, Amherst', beds: 2, baths: 1, distance: '0.5mi', verified: true,  tag: 'Popular' },
+  { id: 2, price: 750,  address: '45 Fearing St, Amherst',     beds: 1, baths: 1, distance: '0.8mi', verified: true,  tag: 'New' },
+  { id: 3, price: 1100, address: '8 Meadow St, Amherst',       beds: 3, baths: 2, distance: '1.2mi', verified: false, tag: 'Spacious' },
+]
+
+const steps = [
+  { num: '1', title: 'Create your account',   desc: 'Sign up with your university email in under a minute.' },
+  { num: '2', title: 'Browse or post',        desc: 'Search listings by price, location, and bedroom count.' },
+  { num: '3', title: 'Connect & move in',     desc: 'Message verified students and sign with confidence.' },
+]
 
 export default function Home() {
-  const [search, setSearch] = useState('')
-  const [liked, setLiked] = useState({})
   const navigate = useNavigate()
-  const toggleLike = (id) => setLiked(prev => ({ ...prev, [id]: !prev[id] }))
+  const [search, setSearch] = useState('')
 
   return (
-    <div style={{ fontFamily: '"Segoe UI", sans-serif', background: WARM.lighter, minHeight: '100vh' }}>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
 
-      {/* Navbar */}
-      <nav style={{ background: WARM.white, padding: '0 48px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F5E6DF', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '36px', height: '36px', background: WARM.primary, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <FiHome color="white" size={18} />
-          </div>
-          <span style={{ color: WARM.text, fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px' }}>Campus<span style={{ color: WARM.primary }}>Nest</span></span>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', background: WARM.light, padding: '6px', borderRadius: '14px' }}>
-          {[['Browse', '/browse'], ['Roommates', '/roommates'], ['Post Listing', '/']].map(([link, path]) => (
-            <span key={link} onClick={() => navigate(path)}
-              style={{ padding: '8px 18px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: WARM.text2, transition: 'all 0.2s' }}
-              onMouseEnter={e => { e.target.style.background = WARM.white; e.target.style.color = WARM.primary }}
-              onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.color = WARM.text2 }}>
-              {link}
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 py-24 relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}
+        />
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+            <span className="inline-block bg-blue-800 text-blue-200 text-sm font-semibold px-4 py-1.5 rounded-full mb-6 border border-blue-700">
+              For UMass & Five College Students
             </span>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button onClick={() => navigate('/login')} style={{ background: 'transparent', border: `2px solid ${WARM.primary}`, color: WARM.primary, padding: '8px 20px', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}>
-            Log In
-          </button>
-          <button onClick={() => navigate('/login')} style={{ background: WARM.primary, border: 'none', color: 'white', padding: '10px 22px', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', boxShadow: '0 4px 12px rgba(196,92,46,0.3)' }}>
-            Sign Up ✨
-          </button>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <div style={{ background: `linear-gradient(135deg, #3D1A0A 0%, ${WARM.primary} 50%, ${WARM.secondary} 100%)`, padding: '90px 48px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '350px', height: '350px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-100px', left: '-60px', width: '300px', height: '300px', background: 'rgba(255,200,150,0.1)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', top: '40px', left: '10%', width: '80px', height: '80px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '40px', right: '15%', width: '50px', height: '50px', background: 'rgba(255,200,150,0.15)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', top: '30%', right: '8%', width: '120px', height: '120px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.15)', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', color: 'white', fontWeight: '600', marginBottom: '20px' }}>
-              🏠 UMass & Five College Students
-            </div>
-            <h1 style={{ color: 'white', fontSize: '52px', fontWeight: '900', margin: '0 0 16px', letterSpacing: '-2px', lineHeight: '1.1' }}>
-              Find your cozy home<br />
-              <span style={{ color: '#FFD4B8' }}>near campus 🏡</span>
+            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-5 leading-tight tracking-tight">
+              Find your perfect<br />
+              <span className="text-blue-300">off-campus home</span>
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', margin: '0 0 40px' }}>
-              Verified listings • Trusted profiles • AI-powered matching
+            <p className="text-blue-200 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+              Verified listings, AI-powered roommate matching, and lease review — all in one place.
             </p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-            style={{ display: 'flex', maxWidth: '580px', margin: '0 auto 48px', background: 'white', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.25)', padding: '6px' }}>
-            <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }}>
-              <FiSearch color={WARM.primary} size={20} />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="flex bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl mx-auto mb-12"
+          >
+            <div className="flex items-center px-4 text-gray-400 shrink-0">
+              <FiSearch size={20} />
             </div>
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search by address, price, bedrooms..."
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', padding: '12px 0', color: WARM.text, background: 'transparent' }} />
-            <button onClick={() => navigate('/browse')} style={{ background: WARM.primary, color: 'white', border: 'none', padding: '12px 28px', borderRadius: '14px', fontSize: '15px', fontWeight: '700', cursor: 'pointer' }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && navigate('/browse')}
+              placeholder="Search by address, neighborhood, or price..."
+              className="flex-1 py-4 text-gray-800 text-base outline-none bg-transparent placeholder-gray-400"
+            />
+            <button
+              onClick={() => navigate('/browse')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 transition-colors text-base shrink-0"
+            >
               Search
             </button>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-            style={{ display: 'flex', justifyContent: 'center', gap: '48px' }}>
-            {[['500+', 'Active Listings', '🏘️'], ['1,200+', 'Students Housed', '🎓'], ['4.8★', 'Average Rating', '⭐']].map(([num, label, emoji]) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ color: 'white', fontSize: '30px', fontWeight: '800' }}>{emoji} {num}</div>
-                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '4px' }}>{label}</div>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+            className="flex justify-center gap-14"
+          >
+            {[['500+', 'Active Listings'], ['1,200+', 'Students Housed'], ['4.8★', 'Average Rating']].map(([num, label]) => (
+              <div key={label} className="text-center">
+                <div className="text-white text-3xl font-extrabold">{num}</div>
+                <div className="text-blue-300 text-sm mt-1 font-medium">{label}</div>
               </div>
             ))}
           </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* Wave Divider */}
-      <div style={{ background: `linear-gradient(135deg, #3D1A0A 0%, ${WARM.primary} 50%, ${WARM.secondary} 100%)`, lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60 Z" fill="#FFF8F4" />
-        </svg>
-      </div>
-
-      {/* Featured Listings */}
-      <div style={{ padding: '64px 48px', background: WARM.lighter, backgroundImage: 'radial-gradient(circle, rgba(196,92,46,0.05) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <div>
-            <h2 style={{ fontSize: '30px', fontWeight: '800', color: WARM.text, margin: '0 0 6px' }}>Featured Listings 🏠</h2>
-            <p style={{ color: WARM.text2, margin: 0, fontSize: '15px' }}>Handpicked listings near UMass Amherst</p>
-          </div>
-          <span onClick={() => navigate('/browse')} style={{ color: WARM.primary, cursor: 'pointer', fontWeight: '700', fontSize: '15px' }}>
-            View all listings →
-          </span>
+      {/* ── All 8 Features ───────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900">Everything you need, in one platform</h2>
+          <p className="text-gray-500 mt-3 text-lg">Eight powerful features built for UMass students</p>
         </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-          {listings.map((l, i) => (
-            <motion.div key={l.id}
-              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-              onClick={() => navigate('/browse')}
-              style={{ background: WARM.white, borderRadius: '20px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(196,92,46,0.08)', cursor: 'pointer', transition: 'all 0.25s', border: '1px solid #F5E6DF' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(196,92,46,0.18)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(196,92,46,0.08)' }}>
-              <div style={{ height: '170px', background: `linear-gradient(135deg, #FDE8DC, #FBBF9A)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <div style={{ fontSize: '52px' }}>🏠</div>
-                <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(255,255,255,0.95)', color: WARM.primary, fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
-                  {l.tag}
-                </div>
-                <div onClick={e => { e.stopPropagation(); toggleLike(l.id) }}
-                  style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                  <FiHeart size={16} fill={liked[l.id] ? '#C45C2E' : 'none'} color={liked[l.id] ? '#C45C2E' : '#999'} />
-                </div>
-                {l.verified && (
-                  <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: WARM.green, color: 'white', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
-                    ✓ Verified
-                  </div>
-                )}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          {features.map((f, i) => (
+            <motion.div
+              key={f.title}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+              onClick={() => navigate(f.path)}
+              className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer"
+            >
+              <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center mb-4`}>
+                <f.icon size={22} />
               </div>
-              <div style={{ padding: '20px' }}>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: WARM.primary, marginBottom: '6px' }}>{l.price}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: WARM.text2, fontSize: '13px', marginBottom: '14px' }}>
-                  <FiMapPin size={13} color={WARM.primary} /> {l.address}
-                </div>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {[`${l.beds} bed`, `${l.baths} bath`, l.distance].map(tag => (
-                    <span key={tag} style={{ background: WARM.light, color: WARM.primary, fontSize: '12px', padding: '4px 12px', borderRadius: '20px', fontWeight: '600' }}>{tag}</span>
-                  ))}
-                </div>
-              </div>
+              <h3 className="font-bold text-gray-900 text-base mb-2">{f.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Wave Divider 2 */}
-      <div style={{ background: WARM.lighter, lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,0 C360,60 1080,0 1440,40 L1440,60 L0,60 Z" fill={WARM.light} />
-        </svg>
-      </div>
-
-      {/* Why CampusNest */}
-      <div style={{ background: WARM.light, padding: '64px 48px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '32px', fontWeight: '800', color: WARM.text, margin: '0 0 8px' }}>Why students love CampusNest 💛</h2>
-        <p style={{ color: WARM.text2, marginBottom: '48px', fontSize: '16px' }}>Built with care for UMass & Five College students</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
-          {[
-            { icon: '🔒', title: 'Verified Listings', desc: 'Social media linked profiles for trusted connections' },
-            { icon: '🤖', title: 'AI Roommate Match', desc: 'Find compatible roommates based on your lifestyle' },
-            { icon: '📄', title: 'AI Lease Review', desc: 'Upload your lease and get instant red flag alerts' },
-          ].map(f => (
-            <div key={f.title} style={{ background: WARM.white, borderRadius: '20px', padding: '32px 24px', border: '1px solid #F5E6DF', boxShadow: '0 2px 12px rgba(196,92,46,0.06)' }}>
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>{f.icon}</div>
-              <div style={{ color: WARM.text, fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>{f.title}</div>
-              <div style={{ color: WARM.text2, fontSize: '14px', lineHeight: '1.7' }}>{f.desc}</div>
+      {/* ── Featured Listings ─────────────────────────────────── */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Featured Listings</h2>
+              <p className="text-gray-500 mt-2">Handpicked housing near UMass Amherst</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <button
+              onClick={() => navigate('/browse')}
+              className="flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 transition-colors text-sm"
+            >
+              View all listings <FiArrowRight size={15} />
+            </button>
+          </div>
 
-      {/* CTA Banner */}
-      <div style={{ background: WARM.primary, padding: '60px 48px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-40px', left: '-40px', width: '200px', height: '200px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-60px', right: '-40px', width: '250px', height: '250px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h2 style={{ color: 'white', fontSize: '32px', fontWeight: '800', margin: '0 0 12px' }}>Ready to find your home? 🏡</h2>
-          <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '32px', fontSize: '16px' }}>Join 1,200+ UMass students already using CampusNest</p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button onClick={() => navigate('/browse')} style={{ background: 'white', color: WARM.primary, border: 'none', padding: '14px 32px', borderRadius: '14px', cursor: 'pointer', fontSize: '16px', fontWeight: '700' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {listings.map((l, i) => (
+              <motion.div
+                key={l.id}
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                onClick={() => navigate('/browse')}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all cursor-pointer overflow-hidden"
+              >
+                <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center relative">
+                  <FiHome size={52} className="text-blue-300" />
+                  <span className="absolute top-3 left-3 bg-white text-gray-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                    {l.tag}
+                  </span>
+                  {l.verified && (
+                    <span className="absolute top-3 right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+                      <FiCheckCircle size={11} /> Verified
+                    </span>
+                  )}
+                </div>
+                <div className="p-5">
+                  <div className="text-2xl font-extrabold text-blue-700 mb-1">${l.price}<span className="text-base font-medium text-gray-400">/mo</span></div>
+                  <div className="flex items-center gap-1.5 text-gray-500 text-sm mb-4">
+                    <FiMapPin size={13} className="text-blue-400 shrink-0" /> {l.address}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[`${l.beds} bed`, `${l.baths} bath`, `${l.distance} to campus`].map(tag => (
+                      <span key={tag} className="bg-blue-50 text-blue-700 text-xs font-medium px-3 py-1 rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI Features Spotlight ─────────────────────────────── */}
+      <section className="py-20 bg-gradient-to-br from-violet-950 via-violet-900 to-indigo-900 relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}
+        />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-12">
+            <span className="inline-block bg-violet-800 text-violet-200 text-sm font-semibold px-4 py-1.5 rounded-full mb-4 border border-violet-700">
+              Powered by AI
+            </span>
+            <h2 className="text-3xl font-bold text-white">Smart tools for smarter decisions</h2>
+            <p className="text-violet-300 mt-3 text-lg">AI-powered features designed with student privacy in mind</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* AI Match */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
+              <div className="bg-violet-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6">
+                <FiZap className="text-white" size={28} />
+              </div>
+              <h3 className="text-white text-2xl font-bold mb-3">AI Roommate Matching</h3>
+              <p className="text-violet-200 mb-6 leading-relaxed text-sm">
+                Complete a lifestyle questionnaire — sleep schedule, cleanliness, noise tolerance, budget — and our AI finds your most compatible matches. All personal data is anonymized before processing.
+              </p>
+              <ul className="space-y-2 mb-8">
+                {['Sleep schedule & cleanliness compatibility', 'Noise tolerance & budget alignment', 'Hobby & lifestyle preferences', 'Privacy-first: PII stripped before AI'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-violet-200 text-sm">
+                    <FiCheckCircle className="text-violet-400 shrink-0" size={14} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => navigate('/ai-match')}
+                className="bg-white text-violet-900 font-bold px-6 py-3 rounded-xl hover:bg-violet-50 transition-colors flex items-center gap-2 text-sm"
+              >
+                Find My Matches <FiArrowRight size={15} />
+              </button>
+            </div>
+
+            {/* Lease Review */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
+              <div className="bg-cyan-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6">
+                <FiFileText className="text-white" size={28} />
+              </div>
+              <h3 className="text-white text-2xl font-bold mb-3">AI Lease Review</h3>
+              <p className="text-violet-200 mb-6 leading-relaxed text-sm">
+                Upload your lease PDF and get a plain-English summary of key clauses, payment terms, and potential red flags — before you sign. Personal information is stripped before analysis.
+              </p>
+              <ul className="space-y-2 mb-8">
+                {['Plain-English clause summaries', 'Red flag & hidden fee detection', 'Payment term & deposit analysis', 'Anonymous: PII removed before AI'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-violet-200 text-sm">
+                    <FiCheckCircle className="text-cyan-400 shrink-0" size={14} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => navigate('/lease-review')}
+                className="bg-white text-cyan-900 font-bold px-6 py-3 rounded-xl hover:bg-cyan-50 transition-colors flex items-center gap-2 text-sm"
+              >
+                Review My Lease <FiArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ─────────────────────────────────────── */}
+      <section className="py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">How it works</h2>
+          <p className="text-gray-500 mb-12 text-lg">Get into your new home in three simple steps</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {steps.map(s => (
+              <div key={s.num} className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-blue-600 text-white font-extrabold text-xl flex items-center justify-center mb-5 shadow-lg shadow-blue-200">
+                  {s.num}
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{s.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA Banner ───────────────────────────────────────── */}
+      <section className="py-20 bg-blue-600">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="text-4xl font-extrabold text-white mb-4">Ready to find your home?</h2>
+          <p className="text-blue-100 text-lg mb-10">Join 1,200+ UMass students already using CampusNest</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/browse')}
+              className="bg-white text-blue-700 font-bold px-8 py-4 rounded-xl text-lg hover:bg-blue-50 transition-colors"
+            >
               Browse Listings
             </button>
-            <button onClick={() => navigate('/login')} style={{ background: 'transparent', color: 'white', border: '2px solid white', padding: '14px 32px', borderRadius: '14px', cursor: 'pointer', fontSize: '16px', fontWeight: '700' }}>
-              Sign Up Free
+            <button
+              onClick={() => navigate('/login')}
+              className="border-2 border-white text-white hover:bg-blue-700 font-bold px-8 py-4 rounded-xl text-lg transition-colors"
+            >
+              Create Free Account
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Footer */}
-      <div style={{ background: '#1A0A05', padding: '28px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '28px', height: '28px', background: WARM.primary, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <FiHome color="white" size={14} />
+      {/* ── Footer ───────────────────────────────────────────── */}
+      <footer className="bg-gray-900 py-8">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="bg-blue-600 rounded-lg p-1.5">
+              <FiHome className="text-white" size={16} />
+            </div>
+            <span className="text-white font-bold text-lg">CampusNest</span>
           </div>
-          <span style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>CampusNest</span>
+          <p className="text-gray-500 text-sm">© 2026 CampusNest — Built for UMass Amherst & Five College Students</p>
         </div>
-        <span style={{ color: '#8B6355', fontSize: '13px' }}>© 2026 CampusNest — Built for UMass Amherst & Five College Students 🏡</span>
-      </div>
-
+      </footer>
     </div>
   )
 }

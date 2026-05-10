@@ -1,160 +1,315 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiHome, FiMapPin, FiSearch, FiSliders } from 'react-icons/fi'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  FiSearch, FiMapPin, FiHome, FiBookmark, FiFlag,
+  FiCheckCircle, FiSliders, FiPlusCircle, FiX, FiLock,
+} from 'react-icons/fi'
+import Navbar from '../components/Navbar'
+import { useAuth } from '../context/AuthContext'
 
 const allListings = [
-  { id: 1, price: 900, address: '123 N Pleasant St, Amherst', beds: 2, baths: 1, distance: '0.5mi', verified: true, available: 'Aug 1' },
-  { id: 2, price: 750, address: '45 Fearing St, Amherst', beds: 1, baths: 1, distance: '0.8mi', verified: true, available: 'Sep 1' },
-  { id: 3, price: 1100, address: '8 Meadow St, Amherst', beds: 3, baths: 2, distance: '1.2mi', verified: false, available: 'Aug 15' },
-  { id: 4, price: 850, address: '72 Lincoln Ave, Amherst', beds: 2, baths: 1, distance: '0.3mi', verified: true, available: 'Aug 1' },
-  { id: 5, price: 650, address: '15 Sunset Ave, Amherst', beds: 1, baths: 1, distance: '1.5mi', verified: false, available: 'Jul 1' },
-  { id: 6, price: 1200, address: '33 Orchard St, Amherst', beds: 4, baths: 2, distance: '0.6mi', verified: true, available: 'Aug 1' },
-  { id: 7, price: 780, address: '90 College St, Amherst', beds: 2, baths: 1, distance: '0.4mi', verified: true, available: 'Sep 1' },
-  { id: 8, price: 920, address: '14 Pine St, Amherst', beds: 3, baths: 1, distance: '0.9mi', verified: false, available: 'Aug 1' },
-  { id: 9, price: 680, address: '5 Oak Ave, Amherst', beds: 1, baths: 1, distance: '1.1mi', verified: true, available: 'Jul 15' },
+  { id: 1,  price: 900,  address: '123 N Pleasant St, Amherst', beds: 2, baths: 1, distance: 0.5, verified: true,  available: 'Aug 1',  tag: 'Popular',     amenities: ['Parking', 'Laundry', 'AC'] },
+  { id: 2,  price: 750,  address: '45 Fearing St, Amherst',     beds: 1, baths: 1, distance: 0.8, verified: true,  available: 'Sep 1',  tag: 'New',         amenities: ['Laundry', 'Heat'] },
+  { id: 3,  price: 1100, address: '8 Meadow St, Amherst',       beds: 3, baths: 2, distance: 1.2, verified: false, available: 'Aug 15', tag: 'Spacious',    amenities: ['Parking', 'AC', 'Dishwasher'] },
+  { id: 4,  price: 850,  address: '72 Lincoln Ave, Amherst',    beds: 2, baths: 1, distance: 0.3, verified: true,  available: 'Aug 1',  tag: 'Near Campus', amenities: ['Heat', 'Laundry'] },
+  { id: 5,  price: 650,  address: '15 Sunset Ave, Amherst',     beds: 1, baths: 1, distance: 1.5, verified: false, available: 'Jul 1',  tag: 'Best Value',  amenities: ['AC'] },
+  { id: 6,  price: 1200, address: '33 Orchard St, Amherst',     beds: 4, baths: 2, distance: 0.6, verified: true,  available: 'Aug 1',  tag: 'Group',       amenities: ['Parking', 'Laundry', 'AC', 'Dishwasher'] },
+  { id: 7,  price: 780,  address: '90 College St, Amherst',     beds: 2, baths: 1, distance: 0.4, verified: true,  available: 'Sep 1',  tag: 'Cozy',        amenities: ['Laundry', 'Heat'] },
+  { id: 8,  price: 920,  address: '14 Pine St, Amherst',        beds: 3, baths: 1, distance: 0.9, verified: false, available: 'Aug 1',  tag: 'Roomy',       amenities: ['Parking', 'AC'] },
+  { id: 9,  price: 680,  address: '5 Oak Ave, Amherst',         beds: 1, baths: 1, distance: 1.1, verified: true,  available: 'Jul 15', tag: 'Value',       amenities: ['Heat', 'Laundry'] },
 ]
 
 export default function Browse() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [maxPrice, setMaxPrice] = useState(1500)
-  const [beds, setBeds] = useState('Any')
-  const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const { user } = useAuth()
 
-  const filtered = allListings.filter(l => {
-    const matchSearch = l.address.toLowerCase().includes(search.toLowerCase())
-    const matchPrice = l.price <= maxPrice
-    const matchBeds = beds === 'Any' || l.beds === parseInt(beds)
-    const matchVerified = !verifiedOnly || l.verified
-    return matchSearch && matchPrice && matchBeds && matchVerified
-  })
+  const [search, setSearch]           = useState('')
+  const [maxPrice, setMaxPrice]       = useState(1500)
+  const [beds, setBeds]               = useState('Any')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [maxDistance, setMaxDistance] = useState(2)
+  const [saved, setSaved]             = useState({})
+  const [reported, setReported]       = useState({})
+  const [reportModal, setReportModal] = useState(null)
+  const [reportReason, setReportReason] = useState('')
+  const [authPrompt, setAuthPrompt]   = useState(null) // 'save' | 'report'
+
+  const filtered = allListings.filter(l =>
+    l.address.toLowerCase().includes(search.toLowerCase()) &&
+    l.price <= maxPrice &&
+    (beds === 'Any' || l.beds === parseInt(beds)) &&
+    (!verifiedOnly || l.verified) &&
+    l.distance <= maxDistance
+  )
+
+  const handleSave = id => {
+    if (!user) { setAuthPrompt('save'); return }
+    setSaved(s => ({ ...s, [id]: !s[id] }))
+  }
+
+  const handleReport = id => {
+    if (!user) { setAuthPrompt('report'); return }
+    setReportModal(id)
+  }
+
+  const submitReport = () => {
+    if (reportReason) {
+      setReported(r => ({ ...r, [reportModal]: true }))
+      setReportModal(null)
+      setReportReason('')
+    }
+  }
 
   return (
-    <div style={{ fontFamily: 'Segoe UI, sans-serif', background: '#f8f8f6', minHeight: '100vh' }}>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
 
-      {/* Navbar */}
-      <nav style={{ background: '#1F3864', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <FiHome color="white" size={22} />
-          <span style={{ color: 'white', fontSize: '22px', fontWeight: '700' }}>CampusNest</span>
+      {/* Page header */}
+      <div className="bg-blue-900 py-8">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold text-white">Browse Listings</h1>
+            <p className="text-blue-300 mt-1 text-sm">{filtered.length} listings near UMass Amherst</p>
+          </div>
+          <button
+            onClick={() => navigate('/post-listing')}
+            className="flex items-center gap-2 bg-white text-blue-900 font-bold px-5 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-md text-sm"
+          >
+            <FiPlusCircle size={18} /> Post a Listing
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          {['Browse', 'Roommates', 'Post Listing'].map(link => (
-            <span key={link} style={{ color: link === 'Browse' ? 'white' : '#aac4e8', cursor: 'pointer', fontSize: '15px', fontWeight: '500' }}>
-              {link}
-            </span>
-          ))}
-        </div>
-        <button onClick={() => navigate('/login')} style={{ background: '#4472C4', border: 'none', color: 'white', padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
-          Sign In
-        </button>
-      </nav>
+      </div>
 
-      <div style={{ display: 'flex', gap: '24px', padding: '24px 40px' }}>
+      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-7">
 
-        {/* Sidebar Filters */}
-        <div style={{ width: '260px', flexShrink: 0 }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-              <FiSliders color="#1F3864" size={18} />
-              <span style={{ fontSize: '16px', fontWeight: '700', color: '#1F3864' }}>Filters</span>
+        {/* ── Sidebar Filters ──────────────────────────────── */}
+        <aside className="w-64 shrink-0 space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-5">
+              <FiSliders className="text-blue-600" size={17} />
+              <span className="font-bold text-gray-900 text-base">Filters</span>
             </div>
 
             {/* Search */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '8px' }}>Search</label>
-              <div style={{ position: 'relative' }}>
-                <FiSearch style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} color="#888" size={14} />
-                <input value={search} onChange={e => setSearch(e.target.value)}
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Search</label>
+              <div className="relative">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Address..."
-                  style={{ width: '100%', padding: '8px 8px 8px 32px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                  className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                />
               </div>
             </div>
 
             {/* Max Price */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '8px' }}>
-                Max Price: <span style={{ color: '#4472C4' }}>${maxPrice}/mo</span>
-              </label>
-              <input type="range" min="500" max="1500" value={maxPrice} onChange={e => setMaxPrice(parseInt(e.target.value))}
-                style={{ width: '100%', accentColor: '#4472C4' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#888' }}>
-                <span>$500</span><span>$1500</span>
+            <div className="mb-5">
+              <div className="flex justify-between mb-2">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Max Price</label>
+                <span className="text-blue-600 text-xs font-bold">${maxPrice}/mo</span>
               </div>
+              <input type="range" min="500" max="1500" step="50" value={maxPrice}
+                onChange={e => setMaxPrice(+e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>$500</span><span>$1,500</span></div>
+            </div>
+
+            {/* Distance */}
+            <div className="mb-5">
+              <div className="flex justify-between mb-2">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Max Distance</label>
+                <span className="text-blue-600 text-xs font-bold">{maxDistance}mi</span>
+              </div>
+              <input type="range" min="0.2" max="2" step="0.1" value={maxDistance}
+                onChange={e => setMaxDistance(parseFloat(e.target.value))} className="w-full accent-blue-600" />
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0.2mi</span><span>2mi</span></div>
             </div>
 
             {/* Bedrooms */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '8px' }}>Bedrooms</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Bedrooms</label>
+              <div className="flex gap-2 flex-wrap">
                 {['Any', '1', '2', '3', '4'].map(b => (
                   <button key={b} onClick={() => setBeds(b)}
-                    style={{ padding: '6px 14px', borderRadius: '20px', border: '1.5px solid', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.2s',
-                      background: beds === b ? '#1F3864' : 'white',
-                      borderColor: beds === b ? '#1F3864' : '#e0e0e0',
-                      color: beds === b ? 'white' : '#444' }}>
-                    {b}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                      beds === b ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                    }`}>
+                    {b === 'Any' ? 'Any' : `${b}+`}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Verified Only */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input type="checkbox" id="verified" checked={verifiedOnly} onChange={e => setVerifiedOnly(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#4472C4' }} />
-              <label htmlFor="verified" style={{ fontSize: '13px', fontWeight: '600', color: '#444', cursor: 'pointer' }}>Verified only</label>
+            {/* Verified only */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div onClick={() => setVerifiedOnly(!verifiedOnly)}
+                className={`w-10 h-5 rounded-full transition-colors relative ${verifiedOnly ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${verifiedOnly ? 'left-5' : 'left-0.5'}`} />
+              </div>
+              <span className="text-sm font-semibold text-gray-700">Verified only</span>
+            </label>
+          </div>
+
+          {/* Reset */}
+          <button
+            onClick={() => { setSearch(''); setMaxPrice(1500); setBeds('Any'); setVerifiedOnly(false); setMaxDistance(2) }}
+            className="w-full text-sm text-gray-500 hover:text-blue-600 font-medium transition-colors py-2"
+          >
+            Reset all filters
+          </button>
+        </aside>
+
+        {/* ── Listings Grid ─────────────────────────────────── */}
+        <div className="flex-1">
+          {filtered.length === 0 ? (
+            <div className="text-center py-24 text-gray-400">
+              <FiHome size={52} className="mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-semibold text-gray-600">No listings match your filters</p>
+              <p className="text-sm mt-1">Try adjusting the price, distance, or bedroom count.</p>
             </div>
-          </div>
-        </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filtered.map((l, i) => (
+                <motion.div key={l.id}
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden"
+                >
+                  {/* Image area */}
+                  <div className="h-44 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center relative">
+                    <FiHome size={44} className="text-blue-300" />
+                    <span className="absolute top-3 left-3 bg-white/90 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                      {l.tag}
+                    </span>
+                    {l.verified && (
+                      <span className="absolute top-3 right-3 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <FiCheckCircle size={10} /> Verified
+                      </span>
+                    )}
+                    {/* Save button */}
+                    <button onClick={() => handleSave(l.id)}
+                      className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all ${
+                        saved[l.id] ? 'bg-blue-600 text-white' : 'bg-white text-gray-400 hover:text-blue-600'
+                      }`}>
+                      <FiBookmark size={14} fill={saved[l.id] ? 'white' : 'none'} />
+                    </button>
+                  </div>
 
-        {/* Listings */}
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1F3864', margin: 0 }}>
-              {filtered.length} listings found
-            </h2>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-            {filtered.map((l, i) => (
-              <motion.div key={l.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)' }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.08)' }}>
-                <div style={{ height: '140px', background: 'linear-gradient(135deg, #D5E8F0, #B5D4F4)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                  <FiHome size={36} color="#4472C4" />
-                  {l.verified && (
-                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#1D9E75', color: 'white', fontSize: '11px', fontWeight: '600', padding: '3px 8px', borderRadius: '20px' }}>
-                      ✓ Verified
+                  {/* Body */}
+                  <div className="p-5">
+                    <div className="text-2xl font-extrabold text-blue-700 mb-1">
+                      ${l.price}<span className="text-sm font-medium text-gray-400">/mo</span>
                     </div>
-                  )}
-                </div>
-                <div style={{ padding: '16px' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#1F3864', marginBottom: '4px' }}>${l.price}/mo</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#666', fontSize: '13px', marginBottom: '10px' }}>
-                    <FiMapPin size={12} /> {l.address}
+                    <div className="flex items-center gap-1.5 text-gray-500 text-sm mb-3">
+                      <FiMapPin size={13} className="text-blue-400 shrink-0" /> {l.address}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {[`${l.beds} bed`, `${l.baths} bath`, `${l.distance}mi`, `Avail. ${l.available}`].map(tag => (
+                        <span key={tag} className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>
+                      ))}
+                    </div>
+                    {l.amenities.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {l.amenities.map(a => (
+                          <span key={a} className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">{a}</span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-1">
+                      <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                        View Details
+                      </button>
+                      {reported[l.id] ? (
+                        <span className="flex items-center gap-1 text-xs text-gray-400 px-3">
+                          <FiCheckCircle size={13} /> Reported
+                        </span>
+                      ) : (
+                        <button onClick={() => handleReport(l.id)}
+                          className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                          title="Report listing">
+                          <FiFlag size={15} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                    {[`${l.beds} bed`, `${l.baths} bath`, `${l.distance} to UMass`, `Available ${l.available}`].map(tag => (
-                      <span key={tag} style={{ background: '#f0f4ff', color: '#4472C4', fontSize: '11px', padding: '3px 8px', borderRadius: '20px', fontWeight: '500' }}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏠</div>
-              <div style={{ fontSize: '18px', fontWeight: '600' }}>No listings found</div>
-              <div style={{ fontSize: '14px', marginTop: '8px' }}>Try adjusting your filters</div>
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Auth Prompt Modal ─────────────────────────────────── */}
+      <AnimatePresence>
+        {authPrompt && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+            onClick={() => setAuthPrompt(null)}>
+            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center"
+              onClick={e => e.stopPropagation()}>
+              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiLock className="text-blue-600" size={24} />
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">Sign in required</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                {authPrompt === 'save' ? 'Log in to save listings to your dashboard.' : 'Log in to report this listing.'}
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setAuthPrompt(null)}
+                  className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={() => navigate('/login?redirect=/browse')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                  Sign In
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Report Modal ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {reportModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+            onClick={() => setReportModal(null)}>
+            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                  <FiFlag className="text-red-500" /> Report Listing
+                </h3>
+                <button onClick={() => setReportModal(null)} className="text-gray-400 hover:text-gray-600"><FiX size={20} /></button>
+              </div>
+              <p className="text-gray-500 text-sm mb-4">Why are you reporting this listing?</p>
+              <div className="space-y-2 mb-5">
+                {['Inaccurate information', 'Scam / fraudulent listing', 'Inappropriate content', 'Already rented / unavailable', 'Other'].map(reason => (
+                  <label key={reason} className="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                    <input type="radio" name="reason" value={reason}
+                      checked={reportReason === reason} onChange={() => setReportReason(reason)} className="accent-blue-600" />
+                    <span className="text-sm text-gray-700">{reason}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setReportModal(null)}
+                  className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={submitReport} disabled={!reportReason}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                  Submit Report
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
