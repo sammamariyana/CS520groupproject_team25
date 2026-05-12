@@ -6,12 +6,10 @@ A student housing and roommate-finder platform built for UMass Amherst students.
 
 ## Team Members
 
-| Name | GitHub |
-|---|---|
-| Sammam Raiyan Ariyana | @sammamariyana |
-| Shivansh Soni | — |
-| Paransha Tajwani | — |
-| Romaisa Fatima | — |
+| Sammam Raiyan Ariyana
+| Shivansh Soni
+| Paransha Tajwani
+| Romaisa Fatima
 
 ---
 
