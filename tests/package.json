@@ -1,0 +1,21 @@
+{
+  "name": "campusnest-tests",
+  "version": "1.0.0",
+  "description": "CampusNest unit and integration test suite",
+  "scripts": {
+    "test": "jest --runInBand --forceExit",
+    "test:unit": "jest unit/ --runInBand --forceExit",
+    "test:integration": "jest integration/ --runInBand --forceExit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 15000,
+    "globalSetup": "./globalSetup.js"
+  },
+  "dependencies": {
+    "supertest": "^6.3.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
